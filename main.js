@@ -26,9 +26,11 @@ Array.prototype.remove = function(i) {
 Array.prototype.insert = function(i, item) {
   this.splice(i, 0, item)
 }
+let evalEagerly = false
 
 let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
 let levelWon = false
+let levelFinished = false // For student API
 const actionQueue = []
 
 function findLocation(objString, grid) {
@@ -173,8 +175,13 @@ function step(dir) {
     if (exitLoc.x === newX && exitLoc.y === newY) {
       nextButton.disabled = false
       levelWon = true
+      levelFinished = true
     }
   })
+
+  if (evalEagerly) {
+    runAllActions()
+  }
 }
 
 function runAllActions() {
@@ -198,12 +205,18 @@ runButton.addEventListener("click", () => {
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
   nextButton.disabled = true
   levelWon = false
+  levelFinished = false
   update()
 
   // Extract code
   const code = editor.value
   // Commit code to history
   history.push(code)
+  // Determine eval type (lazy/eager)
+  if (code.toLowerCase().includes("while"))
+    evalEagerly = true
+  else
+    evalEagerly = false
   // Run code with IIFE to avoid potential scope bugs
   eval(`(function(){ ${code} })()`)
 
@@ -231,6 +244,7 @@ nextButton.addEventListener("click", () => {
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
   nextButton.disabled = true
   levelWon = false
+  levelFinished = false
   update()
 
   // Update level text
@@ -243,6 +257,7 @@ resetButton.addEventListener("click", () => {
   // Revert level state
   nextButton.disabled = true
   levelWon = false
+  levelFinished = false
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
   update()
 })
