@@ -14,17 +14,33 @@ const ctx = canvas.getContext("2d")
 const cellWidth = 50,
       cellHeight = 50
 
+const history = []
 let levelIndex = 0
+
+// For student API
+Array.prototype.remove = function(i) {
+  this.splice(i, 1)
+}
+
+// For student API
+Array.prototype.insert = function(i, item) {
+  this.splice(i, 0, item)
+}
 
 let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
 let levelWon = false
 const actionQueue = []
 
-function findLocation(objString, level) {
+function findLocation(objString, grid) {
+  // Reference level if grid not passed (for student API)
+  if (grid === undefined || grid === null) {
+    grid = level
+  }
+
   // Find player location, move it according to delta
-  for (let x = 0; x < level.length; x++) {
-    for (let y = 0; y < level[x].length; y++) {
-      const ind = level[x][y].indexOf(objString)
+  for (let x = 0; x < grid.length; x++) {
+    for (let y = 0; y < grid[x].length; y++) {
+      const ind = grid[x][y].indexOf(objString)
       if (ind !== -1) {
         return { x: x, y: y }
       }
@@ -180,10 +196,15 @@ const runButton = document.querySelector("#run-button")
 runButton.addEventListener("click", () => {
   // Revert level state
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
+  nextButton.disabled = true
+  levelWon = false
   update()
 
-  // Run code (populates action queue)
+  // Extract code
   const code = editor.value
+  // Commit code to history
+  history.push(code)
+  // Run code with IIFE to avoid potential scope bugs
   eval(`(function(){ ${code} })()`)
 
   // Run actions from action queue
