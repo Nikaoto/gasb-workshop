@@ -5,6 +5,8 @@ const CANVAS_WIDTH = 640
 const CANVAS_HEIGHT = 480
 const ACTION_DELAY = 120
 
+const levelTitleHeader = document.querySelector("#level-title")
+
 const editor = document.querySelector("#editor")
 const canvas = document.querySelector("#canvas")
 const ctx = canvas.getContext("2d")
@@ -209,6 +211,9 @@ nextButton.addEventListener("click", () => {
   nextButton.disabled = true
   levelWon = false
   update()
+
+  // Update level text
+  levelTitleHeader.textContent = `Level ${levelIndex}`
 })
 
 // Reset button

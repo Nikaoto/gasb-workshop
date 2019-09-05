@@ -63,7 +63,8 @@ body {
     width: 100%;
     display: flex;
     flex-direction: row;
-    align-items: space-around;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 .control-button {
@@ -77,4 +78,9 @@ body {
 
 #next-button[disabled] {
     color: lightgrey;
+}
+
+#level-title {
+    font-family: monospace;
+    margin: 0px 0px 8px 5px;
 }
