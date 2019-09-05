@@ -1,27 +1,21 @@
 // main.js
-// requires math.js
+// requires levels.js
+
 const CANVAS_WIDTH = 640
 const CANVAS_HEIGHT = 480
-const ACTION_DELAY = 100
+const ACTION_DELAY = 120
 
 const editor = document.querySelector("#editor")
-
 const canvas = document.querySelector("#canvas")
-// canvas.setAttribute("width", CANVAS_WIDTH)
-// canvas.setAttribute("height", CANVAS_HEIGHT)
-
 const ctx = canvas.getContext("2d")
 
 const cellWidth = 50,
       cellHeight = 50
 
-const startLevel = [
-  [[""],      [""], [""]],
-  [["", "@"], [""], ["", "E"]],
-  [[""],      [""], [""]]
-]
+let levelIndex = 0
 
-let level = JSON.parse(JSON.stringify(startLevel))
+let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
+let levelWon = false
 const actionQueue = []
 
 function findLocation(objString, level) {
@@ -151,24 +145,18 @@ function step(dir) {
     const newY = loc.y + dy
     level[newX][newY].push("@")
 
-    // Check interactions #TODO
-
     // Remove from old position
     level[loc.x][loc.y].splice(level[loc.x][loc.y].indexOf("@"), 1)
 
     update()
+
+    // Check interactions #TODO
+    const exitLoc = findLocation("E", level)
+    if (exitLoc.x === newX && exitLoc.y === newY) {
+      nextButton.disabled = false
+      levelWon = true
+    }
   })
-}
-
-
-function runFirstAction() {
-  // Run first action
-  actionQueue[0](level)
-
-  // Check collisions & conditions #TODO
-
-  // Remove first action
-  actionQueue.splice(0, 1)
 }
 
 function runAllActions() {
@@ -189,7 +177,7 @@ function runAllActions() {
 const runButton = document.querySelector("#run-button")
 runButton.addEventListener("click", () => {
   // Revert level state
-  level = JSON.parse(JSON.stringify(startLevel))
+  level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
   update()
 
   // Run code (populates action queue)
@@ -200,14 +188,37 @@ runButton.addEventListener("click", () => {
   runAllActions()
 })
 
+// Next button
+const nextButton = document.querySelector("#next-button")
+nextButton.addEventListener("click", () => {
+  if (!levelWon) {
+    console.log("Nice try, cheater :D")
+    return;
+  }
 
-const resetButton = document.querySelector("#reset-button")
-resetButton.addEventListener("click", () => {
-  // Revert level state
-  level = JSON.parse(JSON.stringify(startLevel))
+  levelIndex += 1
+
+  // Check if last level cleared
+  if (levelIndex > LEVELS.length - 1) {
+    console.log("FINISH")
+    return;
+  }
+
+  // Load next level
+  level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
+  nextButton.disabled = true
+  levelWon = false
   update()
 })
 
 // Reset button
+const resetButton = document.querySelector("#reset-button")
+resetButton.addEventListener("click", () => {
+  // Revert level state
+  nextButton.disabled = true
+  levelWon = false
+  level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
+  update()
+})
 
 update()
