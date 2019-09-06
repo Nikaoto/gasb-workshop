@@ -158,11 +158,21 @@ function step(dir) {
       return;
     }
 
-    // Check collisions #TODO
-
-    // Add to new position
+    // Calc new position
     const newX = loc.x + dx
     const newY = loc.y + dy
+
+    // Check level edge collisions (AABB)
+    const rowCount = level[0].length
+    const colCount = level.length
+    if (newX < 0 || newX > colCount - 1 ||
+        newY < 0 || newY > rowCount - 1) {
+      console.error(`ERROR: Can not step("${dir}"), already at edge`)
+      update()
+      return;
+    }
+
+    // Add to new position
     level[newX][newY].push("@")
 
     // Remove from old position
