@@ -159,9 +159,6 @@ function runAllActions() {
   if (actionQueue[0]) {
     // Perform first action in queue
     actionQueue[0](level)
-
-    // Check collisions, conditions, and interacitons #TODO
-
     // Remove performed action from queue
     actionQueue.splice(0, 1)
     // Run next action after delay
@@ -270,14 +267,34 @@ function take() {
     }
 
     if (nothingToTake) {
-      console.error("WARNING: Nothing to take")
+      console.error("WARNING: Nothing to take()")
       return;
     }
   })
 }
 
 function put() {
-  
+  // Push action obto FIFO queue
+  actionQueue.push(level => {
+    if (heldItem === null) {
+      console.error("WARNING: nothing to put()")
+        return;
+    }
+
+    // Find player location
+    const loc = findLocation("@", level)
+    if (loc === null) {
+      console.error("ERROR: player does not exist. You hacked my game!")
+      return;
+    }
+
+    // Check item interactions #TODO
+
+    // Place item on level at player location
+    level[loc.x][loc.y].push(heldItem)
+    heldItem = null
+    update()
+  })
 }
 
 // Run button
@@ -290,20 +307,24 @@ runButton.addEventListener("click", () => {
   levelFinished = false
   update()
 
-  // Extract code
-  const code = editor.value
-  // Commit code to history
-  history.push(code)
-  // Determine eval type (lazy/eager)
-  if (code.toLowerCase().includes("while"))
-    evalEagerly = true
-  else
-    evalEagerly = false
-  // Run code with IIFE to avoid potential scope bugs
-  eval(`(function(){ ${code} })()`)
+  // Pefrorm all other actions after delay so the players get to see the initial
+  // state of the level on re-runs. Delay is doubled for better ux
+  window.setTimeout(() => {
+    // Extract code
+    const code = editor.value
+    // Commit code to history
+    history.push(code)
+    // Determine eval type (lazy/eager)
+    if (code.toLowerCase().includes("while"))
+      evalEagerly = true
+    else
+      evalEagerly = false
+    // Run code with IIFE to avoid potential scope bugs
+    eval(`(function(){ ${code} })()`)
 
-  // Run actions from action queue
-  runAllActions()
+    // Run actions from action queue
+    runAllActions()
+  }, ACTION_DELAY * 2)
 })
 
 // Next button
