@@ -1,4 +1,5 @@
 // main.js
+// requires history.js
 // requires levels.js
 // requires items.js
 
@@ -15,8 +16,7 @@ const editor = document.querySelector("#editor")
 const canvas = document.querySelector("#canvas")
 const ctx = canvas.getContext("2d")
 
-const history = [] // #TODO add localstorage saving & loading (in case of crashes)
-let levelIndex = 3 // #TODO change
+let levelIndex = 0 // #TODO change
 
 // Student API
 Array.prototype.remove = function(i) {
@@ -83,6 +83,12 @@ function drawBlock(x, y, offsetX = 0, offsetY = 0) {
   ctx.fillRect(offsetX + CELL_WIDTH * x + 2, offsetY + CELL_HEIGHT * y + 2, CELL_WIDTH - 4, CELL_HEIGHT - 4)
 }
 
+function drawDoor(x, y, offsetX = 0, offsetY = 0) {
+  ctx.font = "25px Arial"
+  ctx.fillStyle = "black"
+  ctx.fillText("D", offsetX + CELL_WIDTH * x + 5, offsetY + CELL_HEIGHT * y + 25)
+}
+
 function drawHero(x, y, offsetX = 0, offsetY = 0) {
   // Draw dim background
   ctx.fillStyle = "rgba(255, 255, 255, 0.4)"
@@ -145,6 +151,9 @@ function drawLevel(level) {
           break;
         case "#":
           drawBlock(i, j, offsetX, offsetY)
+          break;
+        case "D":
+          drawDoor(i, j, offsetX, offsetY)
           break;
         case "@":
           drawQueue.push(() => drawHero(i, j, offsetX, offsetY))
@@ -254,6 +263,13 @@ function step(dir) {
       return;
     }
 
+    // Check door collision
+    if (level[newX][newY].includes("D")) {
+      console.error(`WARNING: Can not step("${dir}"), blocked by door`)
+      redraw(level)
+      return;
+    }
+
     // Add to new position
     level[newX][newY].push("@")
 
@@ -298,7 +314,7 @@ function take() {
         heldItem = level[loc.x][loc.y][i]
         // Remove item from level
         level[loc.x][loc.y].splice(i, 1)
-        update(level)
+        redraw(level)
         break;
       }
     }
@@ -340,6 +356,7 @@ runButton.addEventListener("click", () => {
   // Revert level state
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
   nextButton.disabled = true
+  heldItem = null
   levelWon = false
   levelFinished = false
   redraw(level)
@@ -350,7 +367,7 @@ runButton.addEventListener("click", () => {
     // Extract code
     const code = editor.value
     // Commit code to history
-    history.push(code)
+    commitToHistory(code)
     // Determine eval type (lazy/eager)
     if (code.toLowerCase().includes("while"))
       evalEagerly = true
@@ -361,6 +378,8 @@ runButton.addEventListener("click", () => {
 
     // Run actions from action queue
     runAllActions()
+
+    redraw(level)
   }, ACTION_DELAY)
 })
 
@@ -383,9 +402,9 @@ nextButton.addEventListener("click", () => {
   // Load next level
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
   nextButton.disabled = true
+  heldItem = null
   levelWon = false
   levelFinished = false
-  heldItem = null
   redraw(level)
 
   // Update level text
