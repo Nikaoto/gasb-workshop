@@ -5,6 +5,7 @@
 const CANVAS_WIDTH = 640
 const CANVAS_HEIGHT = 480
 const ACTION_DELAY = 120
+const REDRAW_DELAY = 120
 const CELL_WIDTH = 30
 const CELL_HEIGHT = 30
 
@@ -14,8 +15,8 @@ const editor = document.querySelector("#editor")
 const canvas = document.querySelector("#canvas")
 const ctx = canvas.getContext("2d")
 
-const history = []
-let levelIndex = 3
+const history = [] // #TODO add localstorage saving & loading (in case of crashes)
+let levelIndex = 0 // #TODO change
 
 // For student API
 Array.prototype.remove = function(i) {
@@ -32,6 +33,7 @@ let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
 let levelWon = false
 let levelFinished = false // For student API
 
+const updateQueue = []
 const actionQueue = []
 let evalEagerly = false
 
@@ -146,13 +148,21 @@ function drawLevel(level) {
   }
 }
 
-function update() {
-  // Draw background
-  ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-  ctx.fillStyle = "#F0F0F0"
-  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+function redraw(level) {
+  console.log("update outside IIFE:", findLocation("@", level))
+  const capturedLevel = JSON.parse(JSON.stringify(level));
+  (function(capturedLevel){
+    updateQueue.push(() => {
+      // Draw background
+      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+      ctx.fillStyle = "#F0F0F0"
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
-  drawLevel(level)
+
+      console.log("update inside IIFE:", findLocation("@", capturedLevel))
+      drawLevel(capturedLevel)
+    })
+  }(capturedLevel))
 }
 
 function runAllActions() {
@@ -196,14 +206,15 @@ function step(dir) {
     return;
   }
 
-  // Push action onto FIFO queue
-  actionQueue.push(level => {
+  const action = (level) => {
     // Find player location
     const loc = findLocation("@", level)
     if (loc === null) {
       console.error("ERROR: player does not exist. You hacked my game!")
       return;
     }
+
+    console.log("action loc:", loc)
 
     // Calc new position
     const newX = loc.x + dx
@@ -215,7 +226,7 @@ function step(dir) {
     if (newX < 0 || newX > colCount - 1 ||
         newY < 0 || newY > rowCount - 1) {
       console.error(`WARNING: Can not step("${dir}"), already at edge`)
-      update()
+      redraw(level)
       return;
     }
 
@@ -225,8 +236,6 @@ function step(dir) {
     // Remove from old position
     level[loc.x][loc.y].splice(level[loc.x][loc.y].indexOf("@"), 1)
 
-    update()
-
     // Check interactions #TODO
     const exitLoc = findLocation("E", level)
     if (exitLoc.x === newX && exitLoc.y === newY) {
@@ -234,10 +243,14 @@ function step(dir) {
       levelWon = true
       levelFinished = true
     }
-  })
+
+    redraw(level)
+  }
 
   if (evalEagerly) {
-    runAllActions()
+    action(level)
+  } else {
+    actionQueue.push(action)
   }
 }
 
@@ -261,7 +274,7 @@ function take() {
         heldItem = level[loc.x][loc.y][i]
         // Remove item from level
         level[loc.x][loc.y].splice(i, 1)
-        update()
+        update(level)
         break;
       }
     }
@@ -293,7 +306,7 @@ function put() {
     // Place item on level at player location
     level[loc.x][loc.y].push(heldItem)
     heldItem = null
-    update()
+    redraw(level)
   })
 }
 
@@ -305,10 +318,10 @@ runButton.addEventListener("click", () => {
   nextButton.disabled = true
   levelWon = false
   levelFinished = false
-  update()
+  redraw(level)
 
   // Pefrorm all other actions after delay so the players get to see the initial
-  // state of the level on re-runs. Delay is doubled for better ux
+  // state of the level on re-runs
   window.setTimeout(() => {
     // Extract code
     const code = editor.value
@@ -324,7 +337,7 @@ runButton.addEventListener("click", () => {
 
     // Run actions from action queue
     runAllActions()
-  }, ACTION_DELAY * 2)
+  }, ACTION_DELAY)
 })
 
 // Next button
@@ -349,7 +362,7 @@ nextButton.addEventListener("click", () => {
   levelWon = false
   levelFinished = false
   heldItem = null
-  update()
+  redraw(level)
 
   // Update level text
   levelTitleHeader.textContent = `Level ${levelIndex}`
@@ -364,7 +377,15 @@ resetButton.addEventListener("click", () => {
   levelFinished = false
   heldItem = null
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
-  update()
+  redraw(level)
 })
 
-update()
+redraw(level)
+
+// Start updating graphics every "frame"
+window.setInterval(() => {
+  if (updateQueue[0]) {
+    updateQueue[0]()
+    updateQueue.splice(0, 1)
+  }
+}, REDRAW_DELAY)
