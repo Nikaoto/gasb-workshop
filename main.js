@@ -16,18 +16,32 @@ const canvas = document.querySelector("#canvas")
 const ctx = canvas.getContext("2d")
 
 const history = [] // #TODO add localstorage saving & loading (in case of crashes)
-let levelIndex = 0 // #TODO change
+let levelIndex = 3 // #TODO change
 
-// For student API
+// Student API
 Array.prototype.remove = function(i) {
   this.splice(i, 1)
 }
 
-// For student API
+// Student API
 Array.prototype.insert = function(i, item) {
   this.splice(i, 0, item)
 }
 
+// Student API
+function randomChoice(list) {
+  if (list === null || list === undefined) {
+    console.error(`ERROR: randomChoice argument is null`)
+    return null;
+  }
+
+  if (!Array.isArray(list)) {
+    console.error(`ERROR: randomChoice argument is not an array`)
+    return null;
+  }
+
+  return list[Math.floor(list.length * Math.random())]
+}
 
 let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
 let levelWon = false
@@ -62,6 +76,11 @@ function drawEmpty(x, y, offsetX = 0, offsetY = 0) {
   ctx.strokeStyle = "black"
   ctx.lineWidth = 2;
   ctx.strokeRect(offsetX + CELL_WIDTH * x, offsetY + CELL_HEIGHT * y, CELL_WIDTH, CELL_HEIGHT)
+}
+
+function drawBlock(x, y, offsetX = 0, offsetY = 0) {
+  ctx.fillStyle = "brown"
+  ctx.fillRect(offsetX + CELL_WIDTH * x + 2, offsetY + CELL_HEIGHT * y + 2, CELL_WIDTH - 4, CELL_HEIGHT - 4)
 }
 
 function drawHero(x, y, offsetX = 0, offsetY = 0) {
@@ -124,6 +143,9 @@ function drawLevel(level) {
         case "":
           drawEmpty(i, j, offsetX, offsetY)
           break;
+        case "#":
+          drawBlock(i, j, offsetX, offsetY)
+          break;
         case "@":
           drawQueue.push(() => drawHero(i, j, offsetX, offsetY))
           break;
@@ -149,7 +171,6 @@ function drawLevel(level) {
 }
 
 function redraw(level) {
-  console.log("update outside IIFE:", findLocation("@", level))
   const capturedLevel = JSON.parse(JSON.stringify(level));
   (function(capturedLevel){
     updateQueue.push(() => {
@@ -158,8 +179,6 @@ function redraw(level) {
       ctx.fillStyle = "#F0F0F0"
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
-
-      console.log("update inside IIFE:", findLocation("@", capturedLevel))
       drawLevel(capturedLevel)
     })
   }(capturedLevel))
@@ -214,8 +233,6 @@ function step(dir) {
       return;
     }
 
-    console.log("action loc:", loc)
-
     // Calc new position
     const newX = loc.x + dx
     const newY = loc.y + dy
@@ -226,6 +243,13 @@ function step(dir) {
     if (newX < 0 || newX > colCount - 1 ||
         newY < 0 || newY > rowCount - 1) {
       console.error(`WARNING: Can not step("${dir}"), already at edge`)
+      redraw(level)
+      return;
+    }
+
+    // Check block collision
+    if (level[newX][newY].includes("#")) {
+      console.error(`WARNING: Can not step("${dir}"), blocked by wall`)
       redraw(level)
       return;
     }
