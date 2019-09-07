@@ -65,7 +65,7 @@ the object does not exist at position`)
 
 function findLocation(objString, grid) {
   // Reference level if grid not passed (for student API)
-  if (grid === undefined || grid === null) {
+  if (!grid) {
     grid = level
   }
 
@@ -215,8 +215,8 @@ function runAllActions() {
 }
 
 function step(dir) {
-  if (dir === null || dir === undefined) {
-    console.error(`WARNING: invalid direction "${dir}"`)
+  if (!dir) {
+    console.error(`WARNING: invalid direction step("${dir}")`)
     return;
   }
 
@@ -240,14 +240,14 @@ function step(dir) {
     dy = 1
     break
   default:
-    console.error(`WARNING: invalid direction "${dir}"`)
+    console.error(`WARNING: invalid direction step("${dir}")`)
     return;
   }
 
   const action = (level) => {
     // Find player location
     const loc = findLocation("@", level)
-    if (loc === null) {
+    if (!loc) {
       console.error("ERROR: player does not exist. You hacked my game!")
       return;
     }
@@ -309,13 +309,13 @@ function take() {
   actionQueue.push(level => {
     // Find player location
     const loc = findLocation("@", level)
-    if (loc === null) {
+    if (!loc) {
       console.error("ERROR: player does not exist. You hacked my game!")
       return;
     }
 
     // Check if items can be taken
-    const takeableItems = Object.keys(ITEMS.TAKEABLE)
+    const takeableItems = Object.keys(OBJECTS.TAKEABLE)
     let nothingToTake = true
     for (let i = 0; i < level[loc.x][loc.y].length; i++) {
       if (takeableItems.includes(level[loc.x][loc.y][i])) {
@@ -339,14 +339,14 @@ function take() {
 function put() {
   // Push action obto FIFO queue
   actionQueue.push(level => {
-    if (heldItem === null) {
+    if (!heldItem) {
       console.error("WARNING: nothing to put()")
         return;
     }
 
     // Find player location
     const loc = findLocation("@", level)
-    if (loc === null) {
+    if (!loc) {
       console.error("ERROR: player does not exist. You hacked my game!")
       return;
     }
@@ -387,7 +387,58 @@ function put() {
   })
 }
 
-function check(dir) { // #TODO
+// Student API
+// Returns true if player can move in given dir, - false otherwise
+function check(dir) {
+  if (!dir) {
+    console.error(`WARNING: invalid direction check("${dir}")`)
+    return false;
+  }
+
+  // Determine delta
+  let dx = 0, dy = 0
+  switch (dir) {
+  case "L":
+  case "l":
+    dx = -1
+    break
+  case "R":
+  case "r":
+    dx = 1
+    break
+  case "U":
+  case "u":
+    dy = -1
+    break
+  case "D":
+  case "d":
+    dy = 1
+    break
+  default:
+    console.error(`WARNING: invalid direction check("${dir}")`)
+    return false;
+  }
+
+  const loc = findLocation("@", level)
+  if (!loc) {
+    console.error("ERROR: player does not exist. You hacked my game!")
+    return false;
+  }
+
+  const checkX = loc.x + dx
+  const checkY = loc.y + dy
+
+  // Warn if check position out of bounds
+  if (!level[checkX] || !level[checkX][checkY]) {
+    console.error(`WARNING: nothing at position check("${dir}")`)
+    return false;
+  }
+  
+  const collidableObjects = Object.keys(OBJECTS.COLLIDABLE)
+  const canStep = level[checkX][checkY].reduce(
+    (acc, obj) => acc && (!collidableObjects.includes(obj)), true)
+
+  return canStep
 }
 
 // Run button
