@@ -16,7 +16,17 @@ const editor = document.querySelector("#editor")
 const canvas = document.querySelector("#canvas")
 const ctx = canvas.getContext("2d")
 
-let levelIndex = 0 // #TODO change
+let levelIndex = 5 // #TODO change
+let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
+let levelWon = false
+let levelFinished = false // For student API
+
+const updateQueue = []
+const actionQueue = []
+let evalEagerly = false
+
+let heldItem = null
+
 
 // Student API
 Array.prototype.remove = function(i) {
@@ -43,15 +53,15 @@ function randomChoice(list) {
   return list[Math.floor(list.length * Math.random())]
 }
 
-let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
-let levelWon = false
-let levelFinished = false // For student API
-
-const updateQueue = []
-const actionQueue = []
-let evalEagerly = false
-
-let heldItem = null
+// Student API
+function removeObject(objString, x, y, lvl = level) {
+  if (lvl[x][y].includes(objString)) {
+    lvl[x][y].splice(lvl[x][y].indexOf(objString), 1)
+  } else {
+    console.error(`WARNING: can not removeObject("${objString}", ${x}, ${y}),
+the object does not exist at position`)
+  }
+}
 
 function findLocation(objString, grid) {
   // Reference level if grid not passed (for student API)
@@ -341,13 +351,43 @@ function put() {
       return;
     }
 
-    // Check item interactions #TODO
-
     // Place item on level at player location
     level[loc.x][loc.y].push(heldItem)
+
+    // Check item interactions
+    if (heldItem === "K") {
+      const colCount = level.length
+      const rowCount = level[0].length
+
+      // Remove door and key from level if key placed near a door
+      if (level[loc.x][loc.y].includes("D")) {
+        removeObject("D", loc.x, loc.y, level)
+        removeObject("K", loc.x, loc.y, level)
+      } else if (loc.y > 0 && level[loc.x][loc.y-1].includes("D")) {
+        // Up
+        removeObject("D", loc.x, loc.y - 1, level)
+        removeObject("K", loc.x, loc.y, level)
+      } else if (loc.y < rowCount - 1 && level[loc.x][loc.y+1].includes("D")) {
+        // Down
+        removeObject("D", loc.x, loc.y + 1, level)
+        removeObject("K", loc.x, loc.y, level)
+      } else if (loc.x > 0 && level[loc.x-1][loc.y].includes("D")) {
+        // Left
+        removeObject("D", loc.x - 1, loc.y, level)
+        removeObject("K", loc.x, loc.y, level)
+      } else if (loc.x < colCount - 1 && level[loc.x+1][loc.y].includes("D")) {
+        // Right
+        removeObject("D", loc.x + 1, loc.y, level)
+        removeObject("K", loc.x, loc.y, level)
+      }
+    }
+
     heldItem = null
     redraw(level)
   })
+}
+
+function check(dir) { // #TODO
 }
 
 // Run button
@@ -362,7 +402,7 @@ runButton.addEventListener("click", () => {
   redraw(level)
 
   // Pefrorm all other actions after delay so the players get to see the initial
-  // state of the level on re-runs
+  // state of the level on re-runs (also helps sync take() and put() visual indicators)
   window.setTimeout(() => {
     // Extract code
     const code = editor.value
