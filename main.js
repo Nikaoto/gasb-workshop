@@ -5,7 +5,7 @@
 
 const CANVAS_WIDTH = 640
 const CANVAS_HEIGHT = 480
-const ACTION_DELAY = 120
+const ACTION_DELAY = 150
 const REDRAW_DELAY = 120
 const CELL_WIDTH = 35
 const CELL_HEIGHT = 35
@@ -19,7 +19,7 @@ ctx.imageSmoothingEnabled = false;
 ctx.mozImageSmoothingEnabled = false;
 ctx.webkitImageSmoothingEnabled = false;
 
-let levelIndex = 10 // #TODO change
+let levelIndex = 13 // #TODO change
 let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
 let levelWon = false
 let levelFinished = false // For student API
@@ -72,7 +72,6 @@ function findLocation(objString, grid) {
     grid = level
   }
 
-  // Find player location, move it according to delta
   for (let x = 0; x < grid.length; x++) {
     for (let y = 0; y < grid[x].length; y++) {
       const ind = grid[x][y].indexOf(objString)
@@ -81,7 +80,30 @@ function findLocation(objString, grid) {
       }
     }
   }
+
   return null
+}
+
+function findAllLocations(objString, grid, excludedLocation) {
+  // Reference level if grid not passed (for student API)
+  if (!grid) {
+    grid = level
+  }
+
+  const locations = []
+  for (let x = 0; x < grid.length; x++) {
+    for (let y = 0; y < grid[x].length; y++) {
+      const ind = grid[x][y].indexOf(objString)
+      if (ind !== -1) {
+        // Add location if not excluded
+        if (!(excludedLocation && excludedLocation.x == x && excludedLocation.y == y)) {
+          locations.push({ x: x, y: y })
+        }
+      }
+    }
+  }
+
+  return locations
 }
 
 function drawEmpty(x, y, offsetX = 0, offsetY = 0) {
@@ -107,11 +129,29 @@ function drawDoor(x, y, offsetX = 0, offsetY = 0) {
     doorWidth,
     doorHeight
   )
-  
+
   // Old style
   // ctx.font = "25px Arial"
   // ctx.fillStyle = "black"
   // ctx.fillText("D", offsetX + CELL_WIDTH * x + 5, offsetY + CELL_HEIGHT * y + 25)
+}
+
+function drawPortal(x, y, offsetX = 0, offsetY = 0) {
+  // Draw character
+  const portalWidth = Math.ceil(CELL_WIDTH * 0.7)
+  const portalHeight = Math.ceil(CELL_HEIGHT * 0.82)
+  ctx.drawImage(
+    portalImage,
+    offsetX + x * CELL_WIDTH + Math.floor((CELL_WIDTH - portalWidth) / 2),
+    offsetY + y * CELL_HEIGHT + Math.floor((CELL_HEIGHT - portalHeight) / 2),
+    portalWidth,
+    portalHeight
+  )
+
+  // Old style
+  // ctx.font = "25px Arial"
+  // ctx.fillStyle = "black"
+  // ctx.fillText("P", offsetX + CELL_WIDTH * x + 5, offsetY + CELL_HEIGHT * y + 25)
 }
 
 function drawHero(x, y, offsetX = 0, offsetY = 0) {
@@ -221,7 +261,11 @@ function drawLevel(level) {
           drawQueue.push(() => drawKey(i, j, offsetX, offsetY))
           break;
         default:
-          drawEmpty(i, j, offsetX, offsetY)
+          if (obj.match(/P(\d+)?/)) {
+            drawPortal(i, j, offsetX, offsetY)
+          } else {
+            drawEmpty(i, j, offsetX, offsetY)
+          }
           break;
         }
       })
@@ -249,17 +293,40 @@ function redraw(level) {
   }(capturedLevel))
 }
 
+function teleport(targetLocation) {
+  if (!targetLocation || !level[targetLocation.x] ||
+      !level[targetLocation.x][targetLocation.y]) {
+    console.error(`WARNING: can't teleport(${targetLocation}), invalid target location`)
+  }
+
+  const loc = findLocation("@", level)
+  removeObject("@", loc.x, loc.y)
+  level[targetLocation.x][targetLocation.y].push("@")
+  redraw(level)
+}
+
 function runAllActions() {
   if (actionQueue[0]) {
     // Perform first action in queue
     actionQueue[0](level)
     // Remove performed action from queue
     actionQueue.splice(0, 1)
+
+    // Teleport hero if it occupies same place as portal
+    const loc = findLocation("@", level)
+    for (let obj of level[loc.x][loc.y]) {
+      if (obj.match(/P(\d+)?/)) {
+        const otherLocations = findAllLocations(obj, level, loc)
+        teleport(randomChoice(otherLocations))
+      }
+    }
+
     // Run next action after delay
     window.setTimeout(runAllActions, ACTION_DELAY)
   }
 }
 
+// Student API
 function step(dir) {
   if (!dir) {
     console.error(`WARNING: invalid direction step("${dir}")`)
@@ -350,6 +417,7 @@ function step(dir) {
   }
 }
 
+// Student API
 function take() {
   // Push action onto FIFO queue
   actionQueue.push(level => {
@@ -388,6 +456,7 @@ function take() {
   })
 }
 
+// Student API
 function put() {
   // Push action obto FIFO queue
   actionQueue.push(level => {
@@ -403,8 +472,8 @@ function put() {
       return;
     }
 
-    // Place item on level at player location
-    level[loc.x][loc.y].push(heldItem)
+    // Place item on level at player location behind player
+    level[loc.x][loc.y].splice(level[loc.x][loc.y].indexOf("@"), 0, heldItem)
 
     // Check item interactions
     if (heldItem === "K") {
@@ -500,7 +569,7 @@ function check(dir) {
     console.error(`WARNING: nothing at position check("${dir}")`)
     return false;
   }
-  
+
   const collidableObjects = Object.keys(OBJECTS.COLLIDABLE)
   const canStep = level[checkX][checkY].reduce(
     (acc, obj) => acc && (!collidableObjects.includes(obj)), true)
@@ -572,12 +641,19 @@ nextButton.addEventListener("click", () => {
 // Reset button
 const resetButton = document.querySelector("#reset-button")
 resetButton.addEventListener("click", () => {
+  // Empty actionQueue
+  while (actionQueue.length > 0)
+    actionQueue.pop()
+  // Empty updateQueue
+  while (updateQueue.length > 0)
+    updateQueue.pop()
   // Revert level state
   nextButton.disabled = true
   levelWon = false
   levelFinished = false
   heldItem = null
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
+  
   redraw(level)
 })
 
