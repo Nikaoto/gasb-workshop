@@ -19,7 +19,7 @@ ctx.imageSmoothingEnabled = false;
 ctx.mozImageSmoothingEnabled = false;
 ctx.webkitImageSmoothingEnabled = false;
 
-let levelIndex = 13 // #TODO change
+let levelIndex = 0 // #TODO change
 let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
 let levelWon = false
 let levelFinished = false // For student API
