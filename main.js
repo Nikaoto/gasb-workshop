@@ -7,16 +7,19 @@ const CANVAS_WIDTH = 640
 const CANVAS_HEIGHT = 480
 const ACTION_DELAY = 120
 const REDRAW_DELAY = 120
-const CELL_WIDTH = 30
-const CELL_HEIGHT = 30
+const CELL_WIDTH = 35
+const CELL_HEIGHT = 35
 
 const levelTitleHeader = document.querySelector("#level-title")
 
 const editor = document.querySelector("#editor")
 const canvas = document.querySelector("#canvas")
 const ctx = canvas.getContext("2d")
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
 
-let levelIndex = 7 // #TODO change
+let levelIndex = 10 // #TODO change
 let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
 let levelWon = false
 let levelFinished = false // For student API
@@ -94,19 +97,40 @@ function drawBlock(x, y, offsetX = 0, offsetY = 0) {
 }
 
 function drawDoor(x, y, offsetX = 0, offsetY = 0) {
-  ctx.font = "25px Arial"
-  ctx.fillStyle = "black"
-  ctx.fillText("D", offsetX + CELL_WIDTH * x + 5, offsetY + CELL_HEIGHT * y + 25)
+  // Draw character
+  const doorWidth = Math.ceil(CELL_WIDTH * 0.7)
+  const doorHeight = Math.ceil(CELL_HEIGHT * 0.82)
+  ctx.drawImage(
+    doorImage,
+    offsetX + x * CELL_WIDTH + Math.floor((CELL_WIDTH - doorWidth) / 2),
+    offsetY + y * CELL_HEIGHT + Math.floor((CELL_HEIGHT - doorHeight) / 2),
+    doorWidth,
+    doorHeight
+  )
+  
+  // Old style
+  // ctx.font = "25px Arial"
+  // ctx.fillStyle = "black"
+  // ctx.fillText("D", offsetX + CELL_WIDTH * x + 5, offsetY + CELL_HEIGHT * y + 25)
 }
 
 function drawHero(x, y, offsetX = 0, offsetY = 0) {
-  // Draw dim background
-  ctx.fillStyle = "rgba(255, 255, 255, 0.4)"
-  ctx.fillRect(offsetX + CELL_WIDTH * x + 5, offsetY + CELL_HEIGHT * y + 5, CELL_WIDTH - 10, CELL_HEIGHT - 10)
   // Draw character
-  ctx.font = "25px Arial"
-  ctx.fillStyle = "black"
-  ctx.fillText("@", offsetX + CELL_WIDTH * x + 3, offsetY + CELL_HEIGHT * y + 22)
+  const heroWidth = Math.ceil(CELL_WIDTH * 0.8)
+  const heroHeight = Math.ceil(CELL_HEIGHT * 0.82)
+  ctx.drawImage(
+    heroImage,
+    offsetX + x * CELL_WIDTH + Math.floor((CELL_WIDTH - heroWidth) / 2),
+    offsetY + y * CELL_HEIGHT + Math.floor((CELL_HEIGHT - heroHeight) / 2),
+    heroWidth,
+    heroHeight
+  )
+
+  // Old style
+  // ctx.font = "25px Arial"
+  // ctx.fillStyle = "black"
+  // ctx.fillText("@", offsetX + CELL_WIDTH * x + 3, offsetY + CELL_HEIGHT * y + 22)
+
   // Draw held item
   const itemOffsetX = offsetX + Math.floor(CELL_WIDTH/3)
   const itemOffsetY = offsetY + Math.floor(CELL_HEIGHT/3)
@@ -128,15 +152,37 @@ function drawHero(x, y, offsetX = 0, offsetY = 0) {
 }
 
 function drawExit(x, y, offsetX = 0, offsetY = 0) {
-  ctx.font = "25px Arial"
-  ctx.fillStyle = "black"
-  ctx.fillText("E", offsetX + CELL_WIDTH * x + 5, offsetY + CELL_HEIGHT * y + 25)
+  const padding = 3
+  ctx.drawImage(
+    exitImage,
+    19, 21,
+    12, 10,
+    x * CELL_WIDTH + offsetX + padding,
+    y * CELL_HEIGHT + offsetY + padding,
+    CELL_WIDTH - padding * 2,
+    CELL_HEIGHT - padding * 2)
+
+  // Old style
+  // ctx.font = "25px Arial"
+  // ctx.fillStyle = "black"
+  // ctx.fillText("E", offsetX + CELL_WIDTH * x + 5, offsetY + CELL_HEIGHT * y + 25)
 }
 
 function drawKey(x, y, offsetX = 0, offsetY = 0) {
-  ctx.font = "25px Arial"
-  ctx.fillStyle = "black"
-  ctx.fillText("K", offsetX + CELL_WIDTH * x + 5, offsetY + CELL_HEIGHT * y + 25)
+  const keyWidth = Math.ceil(CELL_WIDTH * 0.82)
+  const keyHeight = Math.ceil(CELL_WIDTH * 0.45)
+  ctx.drawImage(
+    keyImage,
+    offsetX + CELL_WIDTH * x + Math.floor((CELL_WIDTH - keyWidth) / 2),
+    offsetY + CELL_HEIGHT * y +  Math.floor((CELL_HEIGHT - keyHeight) / 2),
+    keyWidth,
+    keyHeight
+  )
+
+  // Old style
+  // ctx.font = "25px Arial"
+  // ctx.fillStyle = "black"
+  // ctx.fillText("K", offsetX + CELL_WIDTH * x + 5, offsetY + CELL_HEIGHT * y + 25)
 }
 
 function drawLevel(level) {
