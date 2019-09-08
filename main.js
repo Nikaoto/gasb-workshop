@@ -16,7 +16,7 @@ const editor = document.querySelector("#editor")
 const canvas = document.querySelector("#canvas")
 const ctx = canvas.getContext("2d")
 
-let levelIndex = 5 // #TODO change
+let levelIndex = 7 // #TODO change
 let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
 let levelWon = false
 let levelFinished = false // For student API
@@ -314,6 +314,12 @@ function take() {
       return;
     }
 
+    // Check if not already holding item
+    if (heldItem) {
+      console.error("WARNING: already holding item. Can't take")
+      return;
+    }
+
     // Check if items can be taken
     const takeableItems = Object.keys(OBJECTS.TAKEABLE)
     let nothingToTake = true
@@ -359,25 +365,40 @@ function put() {
       const colCount = level.length
       const rowCount = level[0].length
 
-      // Remove door and key from level if key placed near a door
+      let shouldDestroyKey = false
+      // Destroy every nearby door and key
+      // On location
       if (level[loc.x][loc.y].includes("D")) {
         removeObject("D", loc.x, loc.y, level)
-        removeObject("K", loc.x, loc.y, level)
-      } else if (loc.y > 0 && level[loc.x][loc.y-1].includes("D")) {
-        // Up
+        shouldDestroyKey = true
+      }
+
+      // Up
+      if (loc.y > 0 && level[loc.x][loc.y-1].includes("D")) {
         removeObject("D", loc.x, loc.y - 1, level)
-        removeObject("K", loc.x, loc.y, level)
-      } else if (loc.y < rowCount - 1 && level[loc.x][loc.y+1].includes("D")) {
-        // Down
+        shouldDestroyKey = true
+      }
+
+      // Down
+      if (loc.y < rowCount - 1 && level[loc.x][loc.y+1].includes("D")) {
         removeObject("D", loc.x, loc.y + 1, level)
-        removeObject("K", loc.x, loc.y, level)
-      } else if (loc.x > 0 && level[loc.x-1][loc.y].includes("D")) {
-        // Left
+        shouldDestroyKey = true
+      }
+
+      // Left
+      if (loc.x > 0 && level[loc.x-1][loc.y].includes("D")) {
         removeObject("D", loc.x - 1, loc.y, level)
-        removeObject("K", loc.x, loc.y, level)
-      } else if (loc.x < colCount - 1 && level[loc.x+1][loc.y].includes("D")) {
-        // Right
+        shouldDestroyKey = true
+      }
+
+      // Right
+      if (loc.x < colCount - 1 && level[loc.x+1][loc.y].includes("D")) {
         removeObject("D", loc.x + 1, loc.y, level)
+        shouldDestroyKey = true
+      }
+
+      // Used so we call key remove function only once
+      if (shouldDestroyKey) {
         removeObject("K", loc.x, loc.y, level)
       }
     }
