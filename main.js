@@ -293,15 +293,24 @@ function redraw(level) {
   }(capturedLevel))
 }
 
-function teleport(targetLocation) {
-  if (!targetLocation || !level[targetLocation.x] ||
-      !level[targetLocation.x][targetLocation.y]) {
-    console.error(`WARNING: can't teleport(${targetLocation}), invalid target location`)
+// Teleports the player to target location
+function teleport(targetX, targetY) {
+  if (!level[targetX] || !level[targetX][targetY]) {
+    console.error(`WARNING: can't teleport(${targetX}, ${targetY}), invalid target location`)
+    return;
   }
 
   const loc = findLocation("@", level)
   removeObject("@", loc.x, loc.y)
-  level[targetLocation.x][targetLocation.y].push("@")
+  level[targetX][targetY].push("@")
+
+  // Check exit interaction
+  if (level[targetX][targetY].includes("E")) {
+    nextButton.disabled = false
+    levelWon = true
+    levelFinished = true
+  }
+
   redraw(level)
 }
 
@@ -317,7 +326,8 @@ function runAllActions(callback) {
     for (let obj of level[loc.x][loc.y]) {
       if (obj.match(/P(\d+)?/)) {
         const otherLocations = findAllLocations(obj, level, loc)
-        teleport(randomChoice(otherLocations))
+        const target = randomChoice(otherLocations)
+        teleport(target.x, target.y)
       }
     }
 
@@ -532,7 +542,7 @@ function put() {
 function check(dir) {
   if (!dir) {
     console.error(`WARNING: invalid direction check("${dir}")`)
-    return false;
+    return null;
   }
 
   // Determine delta
@@ -556,13 +566,13 @@ function check(dir) {
     break
   default:
     console.error(`WARNING: invalid direction check("${dir}")`)
-    return false;
+    return null;
   }
 
   const loc = findLocation("@", level)
   if (!loc) {
     console.error("ERROR: player does not exist. You hacked my game!")
-    return false;
+    return null;
   }
 
   const checkX = loc.x + dx
@@ -571,14 +581,13 @@ function check(dir) {
   // Warn if check position out of bounds
   if (!level[checkX] || !level[checkX][checkY]) {
     console.error(`WARNING: nothing at position check("${dir}")`)
-    return false;
+    return null;
   }
 
   const collidableObjects = Object.keys(OBJECTS.COLLIDABLE)
-  const canStep = level[checkX][checkY].reduce(
-    (acc, obj) => acc && (!collidableObjects.includes(obj)), true)
 
-  return canStep
+  // Return copy
+  return level[checkX][checkY]
 }
 
 // Run button
