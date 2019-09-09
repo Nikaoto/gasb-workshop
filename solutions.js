@@ -145,7 +145,110 @@ move("L", 4)
 move("D", 2)
 put()
 move("D", 2)`,
+
+  // Level 11
+  `
+function move(dir, count) {
+ for (let i = 0; i < count; i++)
+  step(dir)
+}
+
+move("R", 4)
+`,
+
+  // Level 12
+  `function move(dir, count) {
+ for (let i = 0; i < count; i++)
+  step(dir)
+}
+
+move("R", 6)
+take()
+move("L", 6)
+put()
+move("L", 2)`,
+
+  // Level 13
+  `function move(dir, count) {
+ for (let i = 0; i < count; i++)
+  step(dir)
+}
+
+move("R", 8)
+move("D", 8)
+move("L", 8)
+move("U", 6)
+move("R", 6)
+move("D", 4)
+move("L", 4)
+move("U", 2)
+move("R", 2)
+`,
+
+  // Level 14
+  `function move(dir, count) {
+ for (let i = 0; i < count; i++)
+  step(dir)
+}
+
+removeObject("#", 2, 0)
+move("R", 4)
+`,
   
+  // Level 15
+  `function move(dir, count) {
+ for (let i = 0; i < count; i++)
+  step(dir)
+}
+
+move("R", 2)
+move("L", 2)
+take()
+move("R", 2)
+step("L")
+move("U", 2)
+put()
+move("L", 4)
+step("D")
+move("R", 2)
+take()
+move("L", 2)
+move("R", 3)
+move("U", 2)
+put()
+move("U", 2)
+take()
+step("D")
+put()
+put()
+step("U")
+step("L")`,
+
+  // Level 16
+  `
+teleport(7, 1)
+`,
+
+  // Level 17
+  `function move(dir, count) {
+ for (let i = 0; i < count; i++)
+  step(dir)
+}
+
+step("R")
+take()
+move("R", 12)
+
+for(let i = 0; i < 9; i++) {
+ put()
+ move("L", 11)
+ take()
+ move("R", 12)
+}
+
+put()
+move("R", 2)
+`
 ]
 
 function runCodePromise(solution) {

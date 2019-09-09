@@ -19,7 +19,7 @@ ctx.imageSmoothingEnabled = false;
 ctx.mozImageSmoothingEnabled = false;
 ctx.webkitImageSmoothingEnabled = false;
 
-let levelIndex = 0 // #TODO change
+let levelIndex = 0
 let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
 let levelWon = false
 let levelFinished = false // For student API
@@ -29,7 +29,6 @@ const actionQueue = []
 let evalEagerly = false
 
 let heldItem = null
-
 
 // Student API
 Array.prototype.remove = function(i) {
@@ -56,10 +55,12 @@ function randomChoice(list) {
   return list[Math.floor(list.length * Math.random())]
 }
 
+
 // Student API
-function removeObject(objString, x, y, lvl = level) {
-  if (lvl[x][y].includes(objString)) {
-    lvl[x][y].splice(lvl[x][y].indexOf(objString), 1)
+function removeObject(objString, x, y) {
+  if (level[x][y].includes(objString)) {
+    level[x][y].splice(level[x][y].indexOf(objString), 1)
+    redraw(level)
   } else {
     console.error(`WARNING: can not removeObject("${objString}", ${x}, ${y}),
 the object does not exist at position`)
@@ -104,6 +105,15 @@ function findAllLocations(objString, grid, excludedLocation) {
   }
 
   return locations
+}
+
+function removeObjectDev(objString, x, y, lvl = level) {
+  if (lvl[x][y].includes(objString)) {
+    lvl[x][y].splice(lvl[x][y].indexOf(objString), 1)
+  } else {
+    console.error(`WARNING: can not removeObject("${objString}", ${x}, ${y}),
+the object does not exist at position`)
+  }
 }
 
 function drawEmpty(x, y, offsetX = 0, offsetY = 0) {
@@ -301,7 +311,7 @@ function teleport(targetX, targetY) {
   }
 
   const loc = findLocation("@", level)
-  removeObject("@", loc.x, loc.y)
+  removeObjectDev("@", loc.x, loc.y)
   level[targetX][targetY].push("@")
 
   // Check exit interaction
@@ -498,37 +508,37 @@ function put() {
       // Destroy every nearby door and key
       // On location
       if (level[loc.x][loc.y].includes("D")) {
-        removeObject("D", loc.x, loc.y, level)
+        removeObjectDev("D", loc.x, loc.y, level)
         shouldDestroyKey = true
       }
 
       // Up
       if (loc.y > 0 && level[loc.x][loc.y-1].includes("D")) {
-        removeObject("D", loc.x, loc.y - 1, level)
+        removeObjectDev("D", loc.x, loc.y - 1, level)
         shouldDestroyKey = true
       }
 
       // Down
       if (loc.y < rowCount - 1 && level[loc.x][loc.y+1].includes("D")) {
-        removeObject("D", loc.x, loc.y + 1, level)
+        removeObjectDev("D", loc.x, loc.y + 1, level)
         shouldDestroyKey = true
       }
 
       // Left
       if (loc.x > 0 && level[loc.x-1][loc.y].includes("D")) {
-        removeObject("D", loc.x - 1, loc.y, level)
+        removeObjectDev("D", loc.x - 1, loc.y, level)
         shouldDestroyKey = true
       }
 
       // Right
       if (loc.x < colCount - 1 && level[loc.x+1][loc.y].includes("D")) {
-        removeObject("D", loc.x + 1, loc.y, level)
+        removeObjectDev("D", loc.x + 1, loc.y, level)
         shouldDestroyKey = true
       }
 
       // Used so we call key remove function only once
       if (shouldDestroyKey) {
-        removeObject("K", loc.x, loc.y, level)
+        removeObjectDev("K", loc.x, loc.y, level)
       }
     }
 
@@ -632,13 +642,13 @@ function nextClick() {
     return;
   }
 
-  levelIndex += 1
-
   // Check if last level cleared
-  if (levelIndex > LEVELS.length - 1) {
-    console.log("FINISH")
+  if (levelIndex > LEVELS.length - 2) {
+    console.log("Well done, you have finished the game!")
     return;
   }
+
+  levelIndex += 1
 
   // Load next level
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
