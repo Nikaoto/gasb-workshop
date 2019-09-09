@@ -305,7 +305,7 @@ function teleport(targetLocation) {
   redraw(level)
 }
 
-function runAllActions() {
+function runAllActions(callback) {
   if (actionQueue[0]) {
     // Perform first action in queue
     actionQueue[0](level)
@@ -322,7 +322,11 @@ function runAllActions() {
     }
 
     // Run next action after delay
-    window.setTimeout(runAllActions, ACTION_DELAY)
+    window.setTimeout(() => runAllActions(callback), ACTION_DELAY)
+  } else {
+    // No more actions left
+    if (callback)
+      callback()
   }
 }
 
@@ -393,19 +397,19 @@ function step(dir) {
       return;
     }
 
-    // Add to new position
-    level[newX][newY].push("@")
-
-    // Remove from old position
-    level[loc.x][loc.y].splice(level[loc.x][loc.y].indexOf("@"), 1)
-
-    // Check interactions #TODO
+    // Check exit interaction
     const exitLoc = findLocation("E", level)
     if (exitLoc.x === newX && exitLoc.y === newY) {
       nextButton.disabled = false
       levelWon = true
       levelFinished = true
     }
+    
+    // Add to new position
+    level[newX][newY].push("@")
+
+    // Remove from old position
+    level[loc.x][loc.y].splice(level[loc.x][loc.y].indexOf("@"), 1)
 
     redraw(level)
   }
@@ -579,7 +583,7 @@ function check(dir) {
 
 // Run button
 const runButton = document.querySelector("#run-button")
-runButton.addEventListener("click", () => {
+function runCodeClick(codeArg = null, callback = null) {
   // Revert level state
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
   nextButton.disabled = true
@@ -592,7 +596,7 @@ runButton.addEventListener("click", () => {
   // state of the level on re-runs (also helps sync take() and put() visual indicators)
   window.setTimeout(() => {
     // Extract code
-    const code = editor.value
+    const code = codeArg ? codeArg : editor.value
     // Commit code to history
     commitToHistory(code)
     // Determine eval type (lazy/eager)
@@ -604,15 +608,16 @@ runButton.addEventListener("click", () => {
     eval(`(function(){ ${code} })()`)
 
     // Run actions from action queue
-    runAllActions()
+    runAllActions(callback)
 
     redraw(level)
   }, ACTION_DELAY)
-})
+}
+runButton.addEventListener("click", () => runCodeClick())
 
 // Next button
 const nextButton = document.querySelector("#next-button")
-nextButton.addEventListener("click", () => {
+function nextClick() {
   if (!levelWon) {
     console.log("Nice try, cheater :D")
     return;
@@ -636,11 +641,12 @@ nextButton.addEventListener("click", () => {
 
   // Update level text
   levelTitleHeader.textContent = `Level ${levelIndex}`
-})
+}
+nextButton.addEventListener("click", () => nextClick())
 
 // Reset button
 const resetButton = document.querySelector("#reset-button")
-resetButton.addEventListener("click", () => {
+function resetClick() {
   // Empty actionQueue
   while (actionQueue.length > 0)
     actionQueue.pop()
@@ -655,7 +661,8 @@ resetButton.addEventListener("click", () => {
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
   
   redraw(level)
-})
+}
+resetButton.addEventListener("click", () => resetClick())
 
 redraw(level)
 
