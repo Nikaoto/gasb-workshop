@@ -1,0 +1,66 @@
+
+* Intro
+** Gamedev is hard
+** Made a game so you can change it
+
+* JavaScript
+** Numbers
+** Strings
+** Functions
+** Function calls
+
+* Level 0
+** Controls, step fn
+
+* Level 1
+** Console (f12)
+
+* Level 2
+** console.log fn, history, console clear
+
+* Level 3
+** Variable declaration
+#+BEGIN_SRC 
+let dir = "R"
+step(dir)
+step(dir)
+dir = "D"
+step(dir)
+...
+#+END_SRC
+** 
+
+* Level 4
+** Get used to step fn
+
+* Level 5
+** While loop with var declaration
+
+* Level 6
+** For loop, function declaration (moveRight fn)
+
+* Level 7
+** Create move() fn
+
+* Level 8
+
+* Level 9
+
+* Level 10
+
+* Level 11
+
+* Level 12
+
+* Level 13
+
+* Level 14
+** removeObject()
+
+* Level 15
+** sources tab, view js code
+
+* Level 11
+
+* Level 17
+** Do without teleport() and removeObject()
