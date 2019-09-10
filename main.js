@@ -289,6 +289,40 @@ function drawLevel(level) {
   }
 }
 
+// Copy and rotate matrix by pi/2 counterclockwise
+function rotateMatrix(m) {
+  const ret = []
+  for (let x = m[0].length - 1; x >= 0 ; x--) {
+    const row = []
+    for (let y = 0; y < m.length; y++) {
+      row.push(m[y][x])
+    }
+    ret.push(row)
+  }
+  return ret
+}
+
+// Copy and flip matrix along x axis (x axis is the skewer)
+function flipMatrix(m) {
+  const ret = []
+  for (let i = m.length - 1; i >= 0; i--) {
+    ret.push(m[i])
+  }
+  return ret
+}
+
+// Student API
+function injectLevel(newLevel) {
+  const level3d = newLevel.map(row =>
+    row.map(obj => (obj === "" || obj === " ") ? [obj] : ["", obj]))
+  const rotated = rotateMatrix(level3d)
+  const final = flipMatrix(rotated)
+  let finalLevel = flipMatrix(rotateMatrix(level3d))
+  LEVELS[levelIndex] = JSON.parse(JSON.stringify(finalLevel))
+  level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
+  redraw(level)
+}
+
 function redraw(level) {
   const capturedLevel = JSON.parse(JSON.stringify(level));
   (function(capturedLevel){
@@ -678,7 +712,6 @@ function resetClick() {
   levelFinished = false
   heldItem = null
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
-  
   redraw(level)
 }
 resetButton.addEventListener("click", () => resetClick())
