@@ -23,3 +23,13 @@ function clearHistory() {
   }
   window.localStorage.removeItem("workshop-history")
 }
+
+function logHistory(indexFromLast = 0) {
+  console.log(history[history.length - 1 - indexFromLast])
+}
+
+function logAllHistory() {
+  history.forEach((v, i) => {
+    console.log(`${i}: ${v}`)
+  })
+}
