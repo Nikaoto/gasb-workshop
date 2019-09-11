@@ -1,15 +1,7 @@
-# Notes
-Level sketch to array format:
+# gasb-workshop
+Repository for the game programming workshop I led at Georgian-American School of Batumi in 2019
 
-1. Rotate counter-clockwise by pi/2
-2. Flip y axis
-
-# Code snippets
-- Level 2 randomChoice fun
-  ```js
-  let possibleDirections = ["R", "L", "U", "D"]
-  while(levelFinished != true) {
-      let direction = randomChoice(possibleDirections)
-      step(direction)
-  }
-  ```
+## Screenshots
+![Screenshot 1](screenshot-1.png)
+![Screenshot 2](screenshot-2.png)
+![Screenshot 3](screenshot-3.png)
