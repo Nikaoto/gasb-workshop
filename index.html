@@ -45,5 +45,13 @@
   <script src="levels.js"></script>
   <script src="main.js"></script>
   <script src="solutions.js"></script>
+  <script>
+   // Clear history on startup
+   const firstTimeLog = window.localStorage.getItem("gasb-hist-0")
+   if (firstTimeLog === undefined || firstTimeLog === null) {
+     clearHistory()
+   }
+   window.localStorage.setItem("gasb-hist-0", "done")
+  </script>
 
 </html>
