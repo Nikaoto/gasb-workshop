@@ -1,17 +1,37 @@
 # gasb-workshop
 Repository for the game programming workshop I led at Georgian-American School of Batumi in 2019
 
+I taught them some javascript primitives and basic constructs which they used to play and ultimately change the game as they wished.
+
+It should be available on my personal site at https://nika.sh/workshop
+
+The robot sprite is shamelessly stolen from Enter The Guneon's Robot character. I do not own any pixel of it. Everything else was drawn by my brother https://twitter.com/corbyere
+
+
 ## Screenshots
 
 ### One of the harder levels
 
 ![Screenshot 1](screenshot-1.png)
 
+---
+
 ### Spiral level
 
 ![Screenshot 2](screenshot-2.png)
 
-### Levels can be injected at will by the players
-The kids had a lot of fun with this function
+---
+
+### Level injection
+
+Any level can be replaced a new one by calling `injectLevel` with a 2D array describing the level layout.
+
+The kids had a lot of fun with this function.
 
 ![Screenshot 3](screenshot-3.png)
+
+---
+
+# License
+
+MIT (With the exception of the robot sprite, I do not own it so you can't redistribute that)
