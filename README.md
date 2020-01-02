@@ -3,7 +3,7 @@ Repository for the game programming workshop I led at Georgian-American School o
 
 I taught them some javascript primitives and basic constructs which they used to play and ultimately change the game as they wished.
 
-It should be available on my personal site at https://nika.sh/workshop
+It should be available on my personal site at https://nika.ninja/workshop
 
 The robot sprite is shamelessly stolen from Enter The Guneon's Robot character. I do not own any pixel of it. Everything else was drawn by my brother: https://twitter.com/corbyere
 
