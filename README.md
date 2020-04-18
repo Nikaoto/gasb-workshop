@@ -35,4 +35,4 @@ The kids had a lot of fun with this function.
 
 ## License
 
-MIT (With the exception of the robot sprite, I do not own it so you can't redistribute that)
+MIT. The art is all CC.
