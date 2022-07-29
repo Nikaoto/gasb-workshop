@@ -11,6 +11,9 @@ const CELL_WIDTH = 35
 const CELL_HEIGHT = 35
 
 const levelTitleHeader = document.querySelector("#level-title")
+function updateLevelTitleHeader(levelIndex) {
+  levelTitleHeader.textContent = `Level ${levelIndex}`
+}
 
 const editor = document.querySelector("#editor")
 const canvas = document.querySelector("#canvas")
@@ -19,10 +22,33 @@ ctx.imageSmoothingEnabled = false;
 ctx.mozImageSmoothingEnabled = false;
 ctx.webkitImageSmoothingEnabled = false;
 
-let levelIndex = 0
+let levelIndex = 0;
+loadSavedLevelIndex();
+
 let level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
 let levelWon = false
 let levelFinished = false // For student API
+
+function clearSavedLevelIndex() {
+  levelIndex = 0;
+  window.localStorage.setItem("gasb-level-index", 0);
+}
+
+function updateSavedLevelIndex(newIdx) {
+  let idx = window.localStorage.getItem("gasb-level-index");
+  if (idx && +idx < newIdx) {
+    window.localStorage.setItem("gasb-level-index", newIdx);
+  }
+}
+
+function loadSavedLevelIndex() {
+  let idx = window.localStorage.getItem("gasb-level-index");
+  if (idx) {
+    levelIndex = +idx;
+  }
+
+  updateLevelTitleHeader(levelIndex);
+}
 
 const updateQueue = []
 const actionQueue = []
@@ -57,14 +83,73 @@ function randomChoice(list) {
 
 
 // Student API
-function removeObject(objString, x, y) {
+function removeObject(objString, noobx, nooby) {
+  x = noobx - 1
+  y = nooby - 1
   if (level[x][y].includes(objString)) {
     level[x][y].splice(level[x][y].indexOf(objString), 1)
     redraw(level)
   } else {
-    console.error(`WARNING: can not removeObject("${objString}", ${x}, ${y}),
+    console.error(`WARNING: can not removeObject("${objString}", ${noobx}, ${nooby}),
 the object does not exist at position`)
   }
+}
+
+// Student API
+function logLevel(lvl = level) {
+  if (!lvl) printf("NULL!");
+
+  lvl = flipMatrix(rotateMatrix(lvl));
+  console.log(JSON.stringify(lvl, undefined, 2))
+  console.log("[")
+  let longest_blk = lvl[0][0].length - 1
+  lvl.forEach(row => row.forEach(col => {
+    if (col.length > longest_blk)
+      longest_blk = col.length - 2
+  }));
+
+  lvl.forEach(row => {
+    const blocks = row.map((block,i) => {
+      let str;
+      if (block.length == 1) {
+        str = "[\" \"]"
+      } else {
+        str = JSON.stringify(block.filter(item => item != ""))
+      }
+
+      // No comma for last element
+      if (i != row.length - 1) {
+        str = str.concat(",")
+      }
+
+      if (block.length < longest_blk) {
+        for (let i = 0; i < (longest_blk - block.length)*4; i++)
+          str = str.concat(" ")
+      }
+      return str
+    })
+    console.log(`  [${blocks.join("")}]`)
+  });
+  console.log("]")
+}
+
+function findAllLocations(objString, grid) {
+  // Reference level if grid not passed (for student API)
+  if (!grid) {
+    grid = level
+  }
+
+  let locs = []
+  for (let x = 0; x < grid.length; x++) {
+    for (let y = 0; y < grid[x].length; y++) {
+      const ind = grid[x][y].indexOf(objString)
+      if (ind !== -1) {
+        locs.push({ x: x, y: y })
+      }
+    }
+  }
+
+  return locs;
 }
 
 function findLocation(objString, grid) {
@@ -314,9 +399,13 @@ function flipMatrix(m) {
 // Student API
 function injectLevel(newLevel) {
   const level3d = newLevel.map(row =>
-    row.map(obj => (obj === "" || obj === " ") ? [obj] : ["", obj]))
+    row.map(obj => {
+      if (typeof(obj) == 'object') return ["", ...obj.filter(i => i != "")]
+      if (obj === "" || obj === " ") return [obj]
+      return ["", obj]
+    }))
   const rotated = rotateMatrix(level3d)
-  const final = flipMatrix(rotated)
+  //const final = flipMatrix(rotated)
   let finalLevel = flipMatrix(rotateMatrix(level3d))
   LEVELS[levelIndex] = JSON.parse(JSON.stringify(finalLevel))
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
@@ -417,53 +506,58 @@ function step(dir) {
 
   const action = (level) => {
     // Find player location
-    const loc = findLocation("@", level)
-    if (!loc) {
+    const locs = findAllLocations("@", level)
+    if (!locs) {
       console.error("ERROR: player does not exist. You hacked my game!")
       return;
     }
 
-    // Calc new position
-    const newX = loc.x + dx
-    const newY = loc.y + dy
+    locs.forEach(loc => {
+      // Calc new position
+      const newX = loc.x + dx
+      const newY = loc.y + dy
 
-    // Check level edge collisions (AABB)
-    const rowCount = level[0].length
-    const colCount = level.length
-    if (newX < 0 || newX > colCount - 1 ||
-        newY < 0 || newY > rowCount - 1) {
-      console.error(`WARNING: Can not step("${dir}"), already at edge`)
-      redraw(level)
-      return;
-    }
+      // Check level edge collisions (AABB)
+      const rowCount = level[0].length
+      const colCount = level.length
+      if (newX < 0 || newX > colCount - 1 ||
+          newY < 0 || newY > rowCount - 1) {
+        console.error(`WARNING: Can not step("${dir}"), already at edge`)
+        redraw(level)
+        return;
+      }
 
-    // Check block collision
-    if (level[newX][newY].includes("#")) {
-      console.error(`WARNING: Can not step("${dir}"), blocked by wall`)
-      redraw(level)
-      return;
-    }
+      // Check block collision
+      if (level[newX][newY].includes("#")) {
+        console.error(`WARNING: Can not step("${dir}"), blocked by wall`)
+        redraw(level)
+        return;
+      }
 
-    // Check door collision
-    if (level[newX][newY].includes("D")) {
-      console.error(`WARNING: Can not step("${dir}"), blocked by door`)
-      redraw(level)
-      return;
-    }
+      // Check door collision
+      if (level[newX][newY].includes("D")) {
+        console.error(`WARNING: Can not step("${dir}"), blocked by door`)
+        redraw(level)
+        return;
+      }
 
-    // Check exit interaction
-    const exitLoc = findLocation("E", level)
-    if (exitLoc.x === newX && exitLoc.y === newY) {
-      nextButton.disabled = false
-      levelWon = true
-      levelFinished = true
-    }
-    
-    // Add to new position
-    level[newX][newY].push("@")
+      // Check exit interaction
+      const exitLoc = findLocation("E", level)
+      if (!exitLoc) {
+        console.error("ERROR: exit does not exist. You hacked my game!")
+      }
+      if (exitLoc.x === newX && exitLoc.y === newY) {
+        nextButton.disabled = false
+        levelWon = true
+        levelFinished = true
+      }
 
-    // Remove from old position
-    level[loc.x][loc.y].splice(level[loc.x][loc.y].indexOf("@"), 1)
+      // Add to new position
+      level[newX][newY].push("@")
+
+      // Remove from old position
+      level[loc.x][loc.y].splice(level[loc.x][loc.y].indexOf("@"), 1)
+    })
 
     redraw(level)
   }
@@ -683,6 +777,7 @@ function nextClick() {
   }
 
   levelIndex += 1
+  updateSavedLevelIndex(levelIndex);
 
   // Load next level
   level = JSON.parse(JSON.stringify(LEVELS[levelIndex]))
@@ -692,8 +787,8 @@ function nextClick() {
   levelFinished = false
   redraw(level)
 
-  // Update level text
-  levelTitleHeader.textContent = `Level ${levelIndex}`
+  // Update header
+  updateLevelTitleHeader(levelIndex);
 }
 nextButton.addEventListener("click", () => nextClick())
 

@@ -51,6 +51,9 @@
    const firstTimeLog = window.localStorage.getItem("gasb-hist-0")
    if (firstTimeLog === undefined || firstTimeLog === null) {
      clearHistory()
+     clearSavedLevelIndex();
+   } else {
+     loadSavedLevelIndex();
    }
    window.localStorage.setItem("gasb-hist-0", "done")
   </script>

@@ -8,6 +8,11 @@ It should be available on my personal site at https://nikaoto.com/workshop
 All of the art is done by my brother:
 https://twitter.com/corbyere
 
+*todo*:
+
+- make take(), put() and others multiple hero compatible
+- add 'spikes' entity that is on/off on each turn
+- make 2 more levels using spikes
 
 ## Screenshots
 
