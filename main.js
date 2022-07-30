@@ -36,7 +36,7 @@ function clearSavedLevelIndex() {
 
 function updateSavedLevelIndex(newIdx) {
   let idx = window.localStorage.getItem("gasb-level-index");
-  if (idx && +idx < newIdx) {
+  if ((idx && +idx < newIdx) || idx === null) {
     window.localStorage.setItem("gasb-level-index", newIdx);
   }
 }
@@ -100,8 +100,6 @@ function logLevel(lvl = level) {
   if (!lvl) printf("NULL!");
 
   lvl = flipMatrix(rotateMatrix(lvl));
-  console.log(JSON.stringify(lvl, undefined, 2))
-  console.log("[")
   let longest_blk = lvl[0][0].length - 1
   lvl.forEach(row => row.forEach(col => {
     if (col.length > longest_blk)
@@ -130,7 +128,6 @@ function logLevel(lvl = level) {
     })
     console.log(`  [${blocks.join("")}]`)
   });
-  console.log("]")
 }
 
 function findAllLocations(objString, grid) {
@@ -485,18 +482,22 @@ function step(dir) {
   switch (dir) {
   case "L":
   case "l":
+  case "left":
     dx = -1
     break
   case "R":
   case "r":
+  case "right":
     dx = 1
     break
   case "U":
   case "u":
+  case "up":
     dy = -1
     break
   case "D":
   case "d":
+  case "down":
     dy = 1
     break
   default:
