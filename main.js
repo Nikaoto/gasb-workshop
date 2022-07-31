@@ -84,8 +84,9 @@ function randomChoice(list) {
 
 // Student API
 function removeObject(objString, noobx, nooby) {
-  x = noobx - 1
-  y = nooby - 1
+  const x = noobx - 1
+  const y = nooby - 1
+
   if (level[x][y].includes(objString)) {
     level[x][y].splice(level[x][y].indexOf(objString), 1)
     redraw(level)
