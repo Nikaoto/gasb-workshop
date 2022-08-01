@@ -81,7 +81,6 @@ function randomChoice(list) {
   return list[Math.floor(list.length * Math.random())]
 }
 
-
 // Student API
 function removeObject(objString, noobx, nooby) {
   const x = noobx - 1
@@ -101,34 +100,46 @@ function logLevel(lvl = level) {
   if (!lvl) printf("NULL!");
 
   lvl = flipMatrix(rotateMatrix(lvl));
-  let longest_blk = lvl[0][0].length - 1
+  let longest_blk_len = 4;
   lvl.forEach(row => row.forEach(col => {
-    if (col.length > longest_blk)
-      longest_blk = col.length - 2
+    const c = col.filter(obj => obj !== "");
+    const bracketCount = 2;
+    const commaCount = c.length - 1;
+    const quoteCount = 2 * c.length;
+    const charCount = c.reduce((sum, obj) => obj.length + sum, 0);
+    const len = bracketCount + quoteCount + commaCount + charCount;
+
+    if (longest_blk_len < len)
+      longest_blk_len = len;
   }));
 
-  lvl.forEach(row => {
+  let finalStr = "[\n";
+  lvl.forEach((row, rowIdx) => {
     const blocks = row.map((block,i) => {
       let str;
       if (block.length == 1) {
-        str = "[\" \"]"
+        str = "[\" \"]";
       } else {
-        str = JSON.stringify(block.filter(item => item != ""))
+        str = JSON.stringify(block.filter(item => item != ""));
       }
 
       // No comma for last element
       if (i != row.length - 1) {
         str = str.concat(",")
+        // Pad with spaces to align with the column
+        if (str.length < longest_blk_len - 1) {
+          let limit = longest_blk_len - str.length + 1;
+          for (let i = 0; i < limit; i++) str = str.concat(" ");
+        }
       }
 
-      if (block.length < longest_blk) {
-        for (let i = 0; i < (longest_blk - block.length)*4; i++)
-          str = str.concat(" ")
-      }
       return str
     })
-    console.log(`  [${blocks.join("")}]`)
+    finalStr = finalStr.concat(`  [${blocks.join("")}],\n`);
   });
+  finalStr = finalStr.concat("]");
+  console.log(finalStr);
+  return longest_blk_len;
 }
 
 function findAllLocations(objString, grid) {
