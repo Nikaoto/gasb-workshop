@@ -142,25 +142,6 @@ function logLevel(lvl = level) {
   return longest_blk_len;
 }
 
-function findAllLocations(objString, grid) {
-  // Reference level if grid not passed (for student API)
-  if (!grid) {
-    grid = level
-  }
-
-  let locs = []
-  for (let x = 0; x < grid.length; x++) {
-    for (let y = 0; y < grid[x].length; y++) {
-      const ind = grid[x][y].indexOf(objString)
-      if (ind !== -1) {
-        locs.push({ x: x, y: y })
-      }
-    }
-  }
-
-  return locs;
-}
-
 function findLocation(objString, grid) {
   // Reference level if grid not passed (for student API)
   if (!grid) {
@@ -435,6 +416,27 @@ function redraw(level) {
   }(capturedLevel))
 }
 
+// Teleports the object to target location
+function teleportObj(objStr, objX, objY, targetX, targetY) {
+  if (!level[targetX] || !level[targetX][targetY]) {
+    console.error(`WARNING: can't teleport(${targetX}, ${targetY}), invalid target location`)
+    return;
+  }
+
+  removeObjectDev(objStr, objX, objY)
+  level[targetX][targetY].push(objStr)
+
+  // Check exit interaction with player
+  if (objStr == "@" && level[targetX][targetY].includes("E")) {
+    nextButton.disabled = false
+    levelWon = true
+    levelFinished = true
+  }
+
+  redraw(level)
+}
+
+// Student API
 // Teleports the player to target location
 function teleport(targetX, targetY) {
   if (!level[targetX] || !level[targetX][targetY]) {
@@ -456,6 +458,7 @@ function teleport(targetX, targetY) {
   redraw(level)
 }
 
+
 function runAllActions(callback) {
   if (actionQueue[0]) {
     // Perform first action in queue
@@ -464,14 +467,16 @@ function runAllActions(callback) {
     actionQueue.splice(0, 1)
 
     // Teleport hero if it occupies same place as portal
-    const loc = findLocation("@", level)
-    for (let obj of level[loc.x][loc.y]) {
-      if (obj.match(/P(\d+)?/)) {
-        const otherLocations = findAllLocations(obj, level, loc)
-        const target = randomChoice(otherLocations)
-        teleport(target.x, target.y)
+    const locs = findAllLocations("@", level)
+    locs.forEach(loc => {
+      for (let obj of level[loc.x][loc.y]) {
+        if (obj.match(/P(\d+)?/)) {
+          const otherLocations = findAllLocations(obj, level, loc)
+          const target = randomChoice(otherLocations)
+          teleportObj("@", loc.x, loc.y, target.x, target.y)
+        }
       }
-    }
+    })
 
     // Run next action after delay
     window.setTimeout(() => runAllActions(callback), ACTION_DELAY)
@@ -587,37 +592,39 @@ function take() {
   // Push action onto FIFO queue
   actionQueue.push(level => {
     // Find player location
-    const loc = findLocation("@", level)
-    if (!loc) {
+    const locs = findAllLocations("@", level)
+    if (!locs || locs.length === 0) {
       console.error("ERROR: player does not exist. You hacked my game!")
       return;
     }
 
-    // Check if not already holding item
-    if (heldItem) {
-      console.error("WARNING: already holding item. Can't take")
-      return;
-    }
-
-    // Check if items can be taken
-    const takeableItems = Object.keys(OBJECTS.TAKEABLE)
-    let nothingToTake = true
-    for (let i = 0; i < level[loc.x][loc.y].length; i++) {
-      if (takeableItems.includes(level[loc.x][loc.y][i])) {
-        nothingToTake = false
-        // Hold item
-        heldItem = level[loc.x][loc.y][i]
-        // Remove item from level
-        level[loc.x][loc.y].splice(i, 1)
-        redraw(level)
-        break;
+    locs.forEach(loc => {
+      // Check if not already holding item
+      if (heldItem) {
+        console.error("WARNING: already holding item. Can't take")
+        return;
       }
-    }
 
-    if (nothingToTake) {
-      console.error("WARNING: Nothing to take()")
-      return;
-    }
+      // Check if items can be taken
+      const takeableItems = Object.keys(OBJECTS.TAKEABLE)
+      let nothingToTake = true
+      for (let i = 0; i < level[loc.x][loc.y].length; i++) {
+        if (takeableItems.includes(level[loc.x][loc.y][i])) {
+          nothingToTake = false
+          // Hold item
+          heldItem = level[loc.x][loc.y][i]
+          // Remove item from level
+          level[loc.x][loc.y].splice(i, 1)
+          redraw(level)
+          break;
+        }
+      }
+
+      if (nothingToTake) {
+        console.error("WARNING: Nothing to take()")
+        return;
+      }
+    })
   })
 }
 
@@ -631,57 +638,59 @@ function put() {
     }
 
     // Find player location
-    const loc = findLocation("@", level)
-    if (!loc) {
+    const locs = findAllLocations("@", level)
+    if (!locs || locs.length === 0) {
       console.error("ERROR: player does not exist. You hacked my game!")
       return;
     }
 
-    // Place item on level at player location behind player
-    level[loc.x][loc.y].splice(level[loc.x][loc.y].indexOf("@"), 0, heldItem)
+    locs.forEach(loc => {
+      // Place item on level at player location behind player
+      level[loc.x][loc.y].splice(level[loc.x][loc.y].indexOf("@"), 0, heldItem)
 
-    // Check item interactions
-    if (heldItem === "K") {
-      const colCount = level.length
-      const rowCount = level[0].length
+      // Check item interactions
+      if (heldItem === "K") {
+        const colCount = level.length
+        const rowCount = level[0].length
 
-      let shouldDestroyKey = false
-      // Destroy every nearby door and key
-      // On location
-      if (level[loc.x][loc.y].includes("D")) {
-        removeObjectDev("D", loc.x, loc.y, level)
-        shouldDestroyKey = true
+        let shouldDestroyKey = false
+        // Destroy every nearby door and key
+        // On location
+        if (level[loc.x][loc.y].includes("D")) {
+          removeObjectDev("D", loc.x, loc.y, level)
+          shouldDestroyKey = true
+        }
+
+        // Up
+        if (loc.y > 0 && level[loc.x][loc.y-1].includes("D")) {
+          removeObjectDev("D", loc.x, loc.y - 1, level)
+          shouldDestroyKey = true
+        }
+
+        // Down
+        if (loc.y < rowCount - 1 && level[loc.x][loc.y+1].includes("D")) {
+          removeObjectDev("D", loc.x, loc.y + 1, level)
+          shouldDestroyKey = true
+        }
+
+        // Left
+        if (loc.x > 0 && level[loc.x-1][loc.y].includes("D")) {
+          removeObjectDev("D", loc.x - 1, loc.y, level)
+          shouldDestroyKey = true
+        }
+
+        // Right
+        if (loc.x < colCount - 1 && level[loc.x+1][loc.y].includes("D")) {
+          removeObjectDev("D", loc.x + 1, loc.y, level)
+          shouldDestroyKey = true
+        }
+
+        // Used so we call key remove function only once
+        if (shouldDestroyKey) {
+          removeObjectDev("K", loc.x, loc.y, level)
+        }
       }
-
-      // Up
-      if (loc.y > 0 && level[loc.x][loc.y-1].includes("D")) {
-        removeObjectDev("D", loc.x, loc.y - 1, level)
-        shouldDestroyKey = true
-      }
-
-      // Down
-      if (loc.y < rowCount - 1 && level[loc.x][loc.y+1].includes("D")) {
-        removeObjectDev("D", loc.x, loc.y + 1, level)
-        shouldDestroyKey = true
-      }
-
-      // Left
-      if (loc.x > 0 && level[loc.x-1][loc.y].includes("D")) {
-        removeObjectDev("D", loc.x - 1, loc.y, level)
-        shouldDestroyKey = true
-      }
-
-      // Right
-      if (loc.x < colCount - 1 && level[loc.x+1][loc.y].includes("D")) {
-        removeObjectDev("D", loc.x + 1, loc.y, level)
-        shouldDestroyKey = true
-      }
-
-      // Used so we call key remove function only once
-      if (shouldDestroyKey) {
-        removeObjectDev("K", loc.x, loc.y, level)
-      }
-    }
+    })
 
     heldItem = null
     redraw(level)
