@@ -1,5 +1,5 @@
 # gasb-workshop
-Repository for the game programming workshop I led at Georgian-American School of Batumi in 2019
+Repository for the game programming workshops I led at Georgian-American School of Batumi in 2019 and 2022.
 
 I taught them some javascript primitives and basic constructs which they used to play and ultimately change the game as they wished.
 
